@@ -148,6 +148,18 @@
   --shadow-card: 0 1px 2px oklch(0 0 0 / 25%), 0 6px 20px oklch(0 0 0 / 25%);
 }
 
+
+.recharts-legend-item-text {
+  color: var(--foreground) !important;
+}
+.recharts-default-tooltip {
+  background-color: var(--popover) !important;
+  border-color: var(--border) !important;
+}
+.recharts-tooltip-item,
+.recharts-tooltip-label {
+  color: var(--popover-foreground) !important;
+}
 @layer base {
   * {
     border-color: var(--color-border);
@@ -207,7 +219,7 @@
 /* View transitions for theme switch */
 ::view-transition-old(root),
 ::view-transition-new(root) {
-  animation: none;
+  animation: vt-hold 860ms cubic-bezier(0.77, 0, 0.18, 1) both;
   mix-blend-mode: normal;
 }
 html.vt-shrink::view-transition-old(root) {
@@ -215,6 +227,10 @@ html.vt-shrink::view-transition-old(root) {
 }
 html.vt-shrink::view-transition-new(root) {
   z-index: 1;
+}
+@keyframes vt-hold {
+  from { opacity: 1; }
+  to { opacity: 1; }
 }
 
 /* Neon border on login card */
@@ -235,13 +251,17 @@ html.vt-shrink::view-transition-new(root) {
   inset: 0;
   border-radius: 24px;
   padding: 3px;
+  z-index: 0;
+  pointer-events: none;
   background: conic-gradient(
     from var(--neon-angle),
     var(--neon) 0deg,
-    transparent 76deg,
+    var(--neon) 140deg,
+    transparent 151deg,
     transparent 180deg,
     var(--neon) 180deg,
-    transparent 256deg,
+    var(--neon) 320deg,
+    transparent 331deg,
     transparent 360deg
   );
   -webkit-mask:
@@ -254,6 +274,10 @@ html.vt-shrink::view-transition-new(root) {
 .neon-frame::after {
   filter: blur(10px);
   opacity: 0.7;
+}
+.neon-frame > * {
+  position: relative;
+  z-index: 1;
 }
 .neon-paused.neon-frame::before,
 .neon-paused.neon-frame::after {

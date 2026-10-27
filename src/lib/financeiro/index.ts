@@ -1,13 +1,66 @@
+import { dataBR } from "@/lib/format";
 import { MODO_CONFIG, STATUS_NOME } from "./config";
 import { ATUALIZADO_EM, DATA_REFERENCIA, PARAMETROS, TITULOS } from "./mock-data";
 import type { Filtros, Modo, PainelFinanceiro, Titulo } from "./types";
 
 export * from "./types";
 export { MODO_CONFIG, STATUS_NOME } from "./config";
+export { FILTRO_COLUNAS_VAZIO, filtrarPorColunas, temFiltroColuna, type FiltroColunas } from "./colunas";
 
 const MESES = ["jan", "fev", "mar", "abr", "mai", "jun", "jul", "ago", "set", "out", "nov", "dez"];
 const sum = (xs: Titulo[]) => xs.reduce((s, t) => s + t.valor, 0);
 
+const RECORTES = ["total", "liquidado", "atraso", "avencer", "indice"] as const;
+export type RecorteKpi = (typeof RECORTES)[number];
+
+export function ehRecorte(id: string): id is RecorteKpi {
+  return (RECORTES as readonly string[]).includes(id);
+}
+
+/** Recorte da lista que cada card representa. O índice usa os títulos em atraso. */
+export function titulosDoRecorte(titulos: Titulo[], recorte: RecorteKpi | null): Titulo[] {
+  if (recorte === "total") return titulos.filter((t) => t.status !== "liquidado");
+  if (recorte === "liquidado") return titulos.filter((t) => t.status === "liquidado");
+  if (recorte === "avencer") return titulos.filter((t) => t.status === "a_vencer");
+  if (recorte === "atraso" || recorte === "indice") return titulos.filter((t) => t.status === "atraso");
+  return titulos;
+}
+
+export function rotuloRecorte(modo: Modo, recorte: RecorteKpi): string {
+  const cfg = MODO_CONFIG[modo];
+  if (recorte === "total") return `Títulos em aberto · ${cfg.totalLabel}`;
+  if (recorte === "liquidado") return `Títulos ${cfg.liquidado.toLowerCase()}s · ${cfg.liquidadoLabel}`;
+  if (recorte === "avencer") return "Títulos a vencer";
+  if (recorte === "indice") return `Títulos em atraso · ${cfg.indiceLabel}`;
+  return "Títulos em atraso";
+}
+
+
+export function nomeRecorte(modo: Modo, recorte: RecorteKpi): string {
+  const cfg = MODO_CONFIG[modo];
+  if (recorte === "total") return "em aberto";
+  if (recorte === "liquidado") return `${cfg.liquidado.toLowerCase()}s`;
+  if (recorte === "avencer") return "a vencer";
+  if (recorte === "indice") return cfg.indiceLabel.toLowerCase();
+  return "em atraso";
+}
+
+export function recorteDoGrafico(id: string): RecorteKpi | null {
+  if (id === "a_vencer" || id === "aVencer") return "avencer";
+  if (id === "atraso" || id === "vencido") return "atraso";
+  if (id === "liquidado") return "liquidado";
+  return null;
+}
+
+export function linhaDoRecorte(modo: Modo, recorte: RecorteKpi | null, f: Filtros, quantidade: number): string {
+  const partes = [MODO_CONFIG[modo].aba, recorte ? nomeRecorte(modo, recorte) : "todos os títulos"];
+  if (f.parte) partes.push(f.parte);
+  if (f.projeto) partes.push(f.projeto);
+  if (f.status) partes.push(STATUS_NOME(modo)[f.status]);
+  if (f.inicio || f.fim) partes.push(`${f.inicio ? dataBR(f.inicio) : "…"} a ${f.fim ? dataBR(f.fim) : "…"}`);
+  partes.push(`${quantidade} títulos`);
+  return partes.join(" · ");
+}
 export function aplicarFiltros(titulos: Titulo[], f: Filtros): Titulo[] {
   return titulos.filter(
     (t) =>
